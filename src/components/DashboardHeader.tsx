@@ -47,6 +47,9 @@ export function DashboardHeader({
     localStorage.removeItem("loginTime");
     localStorage.removeItem("authToken");
     localStorage.removeItem("userSession");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userData");
+    localStorage.removeItem("userName");
     localStorage.removeItem("userRole");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userId");

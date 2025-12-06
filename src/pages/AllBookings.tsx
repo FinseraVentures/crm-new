@@ -34,8 +34,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import CONFIG, { API_ENDPOINTS, getApiUrl } from "@/config/env";
-import axios from "axios";
+import  { API_ENDPOINTS, getApiUrl } from "@/config/env";
+import apiClient from "@/lib/apiClient";
 
 const servicesOptions: MultiSelectOption[] = [
   { label: "MSME", value: "msme" },
@@ -134,7 +134,8 @@ const AllBookings = () => {
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>(initialBookings);
   const [headerSearch, setHeaderSearch] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
-
+  const role = localStorage.getItem("userRole") || "user";
+  const userId = localStorage.getItem("userId") || "";
     // Filter by header search
   const searchedBookings = headerSearch.trim() 
     ? filteredBookings.filter((booking) =>
@@ -156,31 +157,39 @@ const AllBookings = () => {
   }, [currentPage]);
 
   //getting bookings from api
-   useEffect(() => {
-     const fetchData = async () => {
-       try {
-         const token = localStorage.getItem("authToken"); // or wherever you store it
-        //  console.log(token);
-         const url = getApiUrl(API_ENDPOINTS.BOOKINGS.GET_ALL);
-         // console.log(url);
-         const res = await axios.get(url, {
-           headers: {
-             authorization: token,
-           },
-         });
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const url =
+        role === "admin"
+          ? getApiUrl(API_ENDPOINTS.BOOKINGS.GET_ALL)
+          : getApiUrl(API_ENDPOINTS.BOOKINGS.GET_BY_USER(userId));
 
-         console.log("DATA:", res.data.Allbookings);
-          let data =JSON.parse(JSON.stringify(res.data.Allbookings));
-         const frontendBookings: Booking[] = transformBookings(data);
-          setBookings(frontendBookings);
-          setFilteredBookings(frontendBookings);
-       } catch (error: any) {
-         console.error("ERROR:", error.response?.data || error.message);
-       }
-     };
+      const res = await apiClient.get(url);
 
-     fetchData();
-   }, []);
+      const raw =
+        res.data?.bookings ||
+        res.data?.data ||
+        res.data?.Allbookings ||
+        res.data ||
+        [];
+      const data = Array.isArray(raw) ? raw : [];
+
+      const frontendBookings: Booking[] = transformBookings(data);
+
+      setBookings(frontendBookings);
+      setFilteredBookings(frontendBookings);
+    } catch (error: any) {
+      console.error(
+        "Failed to load bookings:",
+        error.response?.data || error.message
+      );
+    }
+  };
+
+  fetchData();
+}, []);
+
   
   // Edit dialog state
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);

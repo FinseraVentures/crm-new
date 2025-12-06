@@ -34,17 +34,10 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CONFIG, { API_ENDPOINTS, getApiUrl } from "@/config/env";
+import axios from "axios";
+import { getServices } from "@/lib/services";
+import { get } from "http";
 
-
-interface Booking {
-  id: string;
-  customerName: string;
-  contact: string;
-  amount: number;
-  description: string;
-  createdOn: string;
-  link: string;
-}
 
 export interface FormDataType {
   branch: string;
@@ -136,9 +129,27 @@ const NewBooking = () => {
   const [paymentDate, setPaymentDate] = useState<Date>();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormDataType>(initialState);
+  const [servicesOptions, setServicesOptions] = useState<MultiSelectOption[]>(
+    []
+  );
+
+  const userSession = JSON.parse(
+    localStorage.getItem(CONFIG.auth.userKey) || "{}"
+  );
+  const Token = localStorage.getItem(CONFIG.auth.tokenKey) || "";
+  const userId = localStorage.getItem(CONFIG.storage.userId) || "";
+  const [errors, setErrors] = useState({});
+
+getServices(Token).then((services) => {
+  setServicesOptions(
+    services.map((service) => ({
+      label: service.label,
+      value: service.value,
+    }))
+  );
+});
 
 
-    const [errors, setErrors] = useState({});
 
 
     //  const validate = () => {
@@ -181,12 +192,62 @@ const NewBooking = () => {
     //    setErrors(validationErrors);
     //    return Object.keys(validationErrors).length === 0;
     //  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  // console.log(formData.amount , formData.selectTerm);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    console.log(formData)
-    e.preventDefault();
+  try {
+    const dataToSubmit = {
+      user_id: userId,
+      bdm: userSession.name,
+      branch_name: formData.branch,
+      company_name: formData.companyName?.toUpperCase() || "",
+      contact_person: formData.contactPerson,
+      email: formData.email,
+      contact_no: Number(formData.contactNumber),
+      services: formData.services,
+      total_amount: formData.totalAmount,
+      closed_by: formData.closed || "",
+      term_1: formData.selectTerm === "term 1" ? formData.amount : null,
+      term_2: formData.selectTerm === "term 2" ? formData.amount : null,
+      term_3: formData.selectTerm === "term 3" ? formData.amount : null,
+      payment_date: formData.paymentDate,
+      pan: formData.pan,
+      gst: formData.gst || "N/A",
+      remark: formData.notes,
+      date: formData.date,
+      bank: formData.bank,
+      state: formData.state,
+      status: "Pending",
+      after_disbursement: formData.funddisbursement || "",
+    };
+
+    // console.log("Submitting booking payload:", dataToSubmit);
+    const url = getApiUrl(API_ENDPOINTS.BOOKINGS.CREATE);
+
+    const response = await axios.post(
+      url,
+      dataToSubmit,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          authorization: Token,
+        },
+      }
+    );
+
     toast.success("Booking created successfully!");
-  };
+
+    // console.log("Response:", response.data);
+// 
+    // Optional: Reset form after submit
+    setFormData(initialState);
+  } catch (error: any) {
+    console.error("Booking submit error:", error.response?.data || error);
+    toast.error(error.response?.data?.message || "Something went wrong!");
+  }
+};
+
 
 const handleChange = (
   e: React.ChangeEvent<

@@ -66,7 +66,7 @@ const LoginSignup: React.FC<LoginSignupProps> = ({ onLoginSuccess }) => {
           }
           if (user) {
             try {
-              // localStorage.setItem(CONFIG.auth.userKey, JSON.stringify(user));
+              localStorage.setItem(CONFIG.auth.userKey, JSON.stringify(user));
               // also store some convenient keys if present
               if (
                 (user.email || form.email) &&
@@ -84,6 +84,10 @@ const LoginSignup: React.FC<LoginSignupProps> = ({ onLoginSuccess }) => {
                localStorage.setItem(
                  CONFIG.storage.userId,
                  user._id || ""
+               );
+               localStorage.setItem(
+                 CONFIG.storage.userName,
+                 user.name || ""
                );
             } catch {}
           }
